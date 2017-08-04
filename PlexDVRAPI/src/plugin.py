@@ -7,7 +7,7 @@ from shutil import rmtree
 
 from Components.ActionMap import ActionMap
 from Components.Button import Button
-from Components.config import config, configfile, ConfigSubsection, ConfigSelection, getConfigListEntry
+from Components.config import config, configfile, ConfigSubsection, ConfigSelection, getConfigListEntry, ConfigSelectionNumber
 from Components.ConfigList import ConfigListScreen
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
@@ -26,6 +26,7 @@ from server import server
 
 config.plexdvrapi = ConfigSubsection()
 config.plexdvrapi.bouquets_list = ConfigSelection(default = "all", choices = [('all', _('All'))] + getBouquetsList())
+config.plexdvrapi.iptv_tunercount = ConfigSelectionNumber(min = 1, max = 10, stepwidth = 1, default = 2, wraparound = True)
 
 BaseURL = {}
 FriendlyName = {}
@@ -34,13 +35,20 @@ Source = {}
 NoOfChannels = {}
 choicelist = []
 
-def TunerInfoDebug():
-	for type in tunerTypes:
+def TunerInfoDebug(type=None):
+	if type:
 		print '[Plex DVR API] %s' % str(BaseURL[type]).replace('\n','')
 		print '[Plex DVR API] %s' % str(FriendlyName[type]).replace('\n','')
 		print '[Plex DVR API] %s' % str(Source[type]).replace('\n','')
 		print '[Plex DVR API] %s' % str(TunerCount[type]).replace('\n','')
 		print '[Plex DVR API] %s' % str(NoOfChannels[type]).replace('\n\n','')
+	else:
+		for type in tunerTypes:
+			print '[Plex DVR API] %s' % str(BaseURL[type]).replace('\n','')
+			print '[Plex DVR API] %s' % str(FriendlyName[type]).replace('\n','')
+			print '[Plex DVR API] %s' % str(Source[type]).replace('\n','')
+			print '[Plex DVR API] %s' % str(TunerCount[type]).replace('\n','')
+			print '[Plex DVR API] %s' % str(NoOfChannels[type]).replace('\n\n','')
 
 def TunerInfo():
 	for type in tunerTypes:
@@ -56,13 +64,14 @@ def TunerInfo():
 			rmdir('/www/%s' % tunerfolders[type])
 
 		discover = getdeviceinfo.discoverdata(type)
+		noofchannels = getlineup.noofchannels(type)
 		BaseURL[type] = 'BaseURL: %s\n' % str(discover["BaseURL"])
 		FriendlyName[type] = 'FriendlyName: %s\n' % str(discover["FriendlyName"])
-		TunerCount[type] = 'TunerCount: %s\n' % str(getdeviceinfo.tunercount(type))
-		Source[type] = 'Source: %s\n' % str(tunerfolders[type]).title()
-		NoOfChannels[type] = 'Channels: %s\n\n' % str(getlineup.noofchannels(type))
+		TunerCount[type] = 'TunerCount: %s\n' % str(getdeviceinfo.tunercount(type)) if type != 'iptv' else 'TunerCount: %s\n' % str(config.plexdvrapi.iptv_tunercount.value)
+		Source[type] = 'Source: %s\n' % str(tunerfolders[type]).title() if type != 'iptv' else str(tunerfolders[type]).upper()
+		NoOfChannels[type] = 'Channels: %s\n\n' % str(noofchannels)
 
-		if getdeviceinfo.tunercount(type) > 0 and getlineup.noofchannels(type) > 0:
+		if getdeviceinfo.tunercount(type) > 0 and noofchannels > 0:
 			choicelist.append((type, str(tunerfolders[type]).title()))
 
 TunerInfo()
@@ -79,19 +88,19 @@ if path.exists('/www') and not listdir('/www'):
 
 class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 	skin="""
-	<screen position="center,center" size="600,325">
-		<widget name="config" position="10,10" size="580,50" scrollbarMode="showOnDemand" />
-		<widget name="TunerInfoLabel" position="10,70" size="580,185" font="Regular;22"/>
-		<widget name="HintLabel" position="10,200" size="580,75" font="Regular;22" valign="bottom"/>
-		<ePixmap pixmap="skin_default/buttons/red.png" position="0,285" size="140,40" alphatest="on"/>
-		<ePixmap pixmap="skin_default/buttons/green.png" position="150,285" size="140,40" alphatest="on"/>
-		<ePixmap pixmap="skin_default/buttons/yellow.png" position="300,285" size="140,40" alphatest="on"/>
-		<ePixmap pixmap="skin_default/buttons/blue.png" position="450,285" size="140,40" alphatest="on"/>
-		<widget name="key_red" position="0,285" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" transparent="1"/>
-		<widget name="key_green" position="150,285" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#1f771f" transparent="1"/>
-		<widget name="key_yellow" position="300,285" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#a08500" transparent="1"/>
-		<widget name="key_blue" position="450,285" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#18188b" transparent="1"/>
-	</screen>"""
+	<screen position="center,center" size="600,350">
+		<widget name="config" position="10,10" size="580,75" scrollbarMode="showOnDemand" />
+		<widget name="TunerInfoLabel" position="10,95" size="580,185" font="Regular;22"/>
+		<widget name="HintLabel" position="10,225" size="580,75" font="Regular;22" valign="bottom"/>
+		<ePixmap pixmap="skin_default/buttons/red.png" position="0,305" size="140,40" alphatest="on"/>
+		<ePixmap pixmap="skin_default/buttons/green.png" position="150,310" size="140,40" alphatest="on"/>
+		<ePixmap pixmap="skin_default/buttons/yellow.png" position="300,310" size="140,40" alphatest="on"/>
+		<ePixmap pixmap="skin_default/buttons/blue.png" position="450,310" size="140,40" alphatest="on"/>
+		<widget name="key_red" position="0,310" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" transparent="1"/>
+		<widget name="key_green" position="150,310" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#1f771f" transparent="1"/>
+		<widget name="key_yellow" position="300,310" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#a08500" transparent="1"/>
+		<widget name="key_blue" position="450,310" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#18188b" transparent="1"/>
+		</screen>"""
 
 	def __init__(self, session, menu_path=""):
 		instance = None
@@ -120,19 +129,14 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 			title =  _("Plex DVR API for Enigma2")
 			self.menu_path = ""
 		Screen.setTitle(self, title)
-		TunerInfo()
-		TunerInfoDebug()
 
-		self.savedval = config.plexdvrapi.type.value
+		self.changed = False
+		self.savedtypeval = config.plexdvrapi.type.value
 		config.plexdvrapi.bouquets_list.setChoices([('all', _('All'))] + getBouquetsList())
 
 		self.onChangedEntry = [ ]
 		self.list = []
-		self.list.append(getConfigListEntry(_('Tuner type to use.'), config.plexdvrapi.type))
-		self.list.append(getConfigListEntry(_('Bouquet to use.'), config.plexdvrapi.bouquets_list))
-		ConfigListScreen.__init__(self, self.list, session = session, on_change = self.populate)
-		self["config"].list = self.list
-		self["config"].l.setList(self.list)
+		ConfigListScreen.__init__(self, self.list, session = session, on_change = self.onChange)
 
 		self["TunerInfoLabel"] = Label()
 		self["HintLabel"] = Label()
@@ -167,14 +171,11 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 		self["key_yellow"].hide()
 		self["key_blue"] = Button(_("About"))
 
-		assert PlexDVRAPI_Setup.instance is None, "class InfoBar is a singleton class and just one instance of this class is allowed!"
+		assert PlexDVRAPI_Setup.instance is None, "class is a singleton class and just one instance of this class is allowed!"
 		PlexDVRAPI_Setup.instance = self
 
 		self.onLayoutFinish.append(self.populate)
 		self.onClose.append(self.__onClose)
-
-		if not self.populate in self["config"].onSelectionChanged:
-			self["config"].onSelectionChanged.append(self.populate)
 
 	def __onClose(self):
 		PlexDVRAPI_Setup.instance = None
@@ -182,7 +183,20 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 	def about(self):
 		self.session.open(PlexDVRAPI_About, self.menu_path)
 
+	def onChange(self):
+		self.populate()
+
+	def createmenu(self):
+		self.list = []
+		self.list.append(getConfigListEntry(_('Tuner type to use.'), config.plexdvrapi.type))
+		self.list.append(getConfigListEntry(_('Bouquet to use.'), config.plexdvrapi.bouquets_list))
+		if config.plexdvrapi.type.value == 'iptv':
+			self.list.append(getConfigListEntry(_('Number of concurent streams.'), config.plexdvrapi.iptv_tunercount))
+		self["config"].list = self.list
+		self["config"].l.setList(self.list)
+
 	def populate(self, answer=None):
+		self.createmenu()
 		setup_exists = False
 		self["actions"].setEnabled(False)
 		self["key_red"].hide()
@@ -198,7 +212,10 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 		elif self["config"].getCurrent() is not None:
 			type = config.plexdvrapi.type.value
 			currentconfig = self["config"].getCurrent()[0]
+
 			TunerInfo()
+			TunerInfoDebug(type)
+
 			self.label = (BaseURL[type]+FriendlyName[type]+Source[type]+TunerCount[type]+NoOfChannels[type])
 
 			for types in tunerTypes:
@@ -221,9 +238,12 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 					if currentconfig == _('Tuner type to use.'):
 						self["HintLabel"].setText(_('Press OK to continue setting up this tuner or press LEFT / RIGHT to select a different tuner type.'))
 						self.hinttext = _('Press LEFT / RIGHT to select a different tuner type.')
-					else:
+					elif currentconfig == _('Bouquet to use.'):
 						self["HintLabel"].setText(_('Press OK to continue setting up this tuner or select a different tuner type.'))
 						self.hinttext = _('Press LEFT / RIGHT to select a different bouquet.')
+					else:
+						self["HintLabel"].setText(_('Press OK to continue setting up this tuner or select a different tuner type.'))
+						self.hinttext = _('Press LEFT / RIGHT to set number of concurent streams.')
 					self.hinttext = self.hinttext + '\n'+_('Press GREEN button to save your configuration.')
 					self["okaction"].setEnabled(True)
 					self["key_green"].setText(_("Save"))
@@ -266,7 +286,7 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 
 
 	def keySave(self):
-		if self.savedval != config.plexdvrapi.type.value and path.exists('/etc/enigma2/%s.device' % self.savedval):
+		if self.savedtypeval != config.plexdvrapi.type.value and path.exists('/etc/enigma2/%s.device' % self.savedtypeval):
 			self.session.openWithCallback(self.saveconfirm, MessageBox,text = _("It seems you have already setup on another tuner, As Plex Server can only support one tuner type, to use this additional tuner type you will need to setup a 2nd Plex Server, do you want to continue creating the files?"), type = MessageBox.TYPE_YESNO)
 		else:
 			self.saveconfirm(True)
@@ -278,13 +298,13 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 			if not path.exists('/etc/enigma2/%s.discover' % type):
 				newsetup = True
 			print '[Plex DVR API] Creating files for %s' % type
-			if not path.exists('/etc/enigma2/%s.device' % self.savedval):
+			if not path.exists('/etc/enigma2/%s.device' % self.savedtypeval):
 				getdeviceinfo.write_device_xml(dvbtype=type)
 				config.plexdvrapi.type.save()
 			config.plexdvrapi.bouquets_list.save()
 			configfile.save()
 			getdeviceinfo.write_discover(dvbtype=type)
-			if self.savedval != config.plexdvrapi.type.value and path.exists('/etc/enigma2/%s.device' % self.savedval) or newsetup:
+			if self.savedtypeval != config.plexdvrapi.type.value and path.exists('/etc/enigma2/%s.device' % self.savedtypeval) or newsetup:
 				self.session.openWithCallback(self.rebootconfirm, MessageBox,text = _("Files created, Please restart enigma2 and then you should be able to add this STB to Plex DVR.\nDo you want to do this now ?"), type = MessageBox.TYPE_YESNO)
 			else:
 				self.close()
@@ -306,11 +326,6 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 			self.session.openWithCallback(self.cancelConfirm, MessageBox, _("Really close without saving settings?"), default = False)
 		else:
 			self.close()
-
-def updateTunerInfo(value):
-		PlexDVRAPI_Setup.instance.populate()
-if not config.plexdvrapi.type.notifiers:
-	config.plexdvrapi.type.addNotifier(updateTunerInfo, initial_call = False)
 
 def startssdp(dvbtype):
 	discover = getdeviceinfo.discoverdata(dvbtype)
