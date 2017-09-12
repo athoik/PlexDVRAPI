@@ -11,6 +11,10 @@ class getLineup:
 	def __init__(self, duplicates = False, single_bouquet = 'all'):
 		self.duplicates = duplicates
 		self.refs_added = []
+		if hasattr(eServiceReference, 'isNumberedMarker'):
+			self.isNumberedMarker = eServiceReference.isNumberedMarker
+		else:
+			self.isNumberedMarker = 256
 		if hasattr(eServiceReference, 'isInvisible'):
 			self.isInvisible = eServiceReference.isInvisible
 		else:
@@ -124,9 +128,9 @@ class getLineup:
 					if service_flags == eServiceReference.isMarker: # standard marker (64), skip
 						continue
 					channel_number += 1 # everything below this point increments the channel number
-					if (service_flags & eServiceReference.isNumberedMarker):
+					if (service_flags & self.isNumberedMarker): # numbered marker (256)
 						continue
-					if (self.bouquets_flags[filename] & self.isInvisible): # invisible bouquet
+					if (self.bouquets_flags[filename] & self.isInvisible): # invisible bouquet (512)
 						continue
 					if int(service_ref_split[0]) != 1: # not a regular service. Might be IPTV.
 						continue
