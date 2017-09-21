@@ -135,7 +135,7 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 		TunerInfoDebug()
 
 		self.changed = False
-		self.savedtypeval = config.plexdvrapi.type.value
+		self.savedval = config.plexdvrapi.type.value
 		config.plexdvrapi.bouquets_list.setChoices([('all', _('All'))] + getBouquetsList())
 
 		self.onChangedEntry = [ ]
@@ -322,7 +322,7 @@ class PlexDVRAPI_Setup(ConfigListScreen, Screen):
 			if not path.exists('/etc/enigma2/%s.discover' % type):
 				newsetup = True
 			print '[Plex DVR API] Creating files for %s' % type
-			if not path.exists('/etc/enigma2/%s.device' % self.savedtypeval):
+			if not path.exists('/etc/enigma2/%s.device' % self.savedval):
 				getdeviceinfo.write_device_xml(dvbtype=type)
 				config.plexdvrapi.type.save()
 			config.plexdvrapi.bouquets_list.save()
